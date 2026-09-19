@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Rutina Fit</title>
+<meta name="description" content="Rutina diaria de 20 minutos para bajar de peso: caminadora, bicicleta y pesas." />
+
+<!-- iOS: comportamiento de app instalada -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rutina Fit" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#ff5a36" />
+<link rel="icon" href="icons/icon-192.png" />
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== Pantalla: Hoy ===== -->
+  <section id="screen-today" class="screen" data-screen="today">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="today-date">—</p>
+        <h1 id="today-heading">Rutina Fit</h1>
+      </div>
+      <div class="streak-badge" id="streak-badge" hidden>
+        <span id="streak-count">0</span> 🔥
+      </div>
+    </header>
+
+    <div class="card hero-card" id="today-card">
+      <p class="tag" id="today-focus">Enfoque</p>
+      <h2 id="today-title">Cargando…</h2>
+
+      <div class="phase-summary" id="today-phase-summary"></div>
+
+      <button class="btn btn-primary btn-large" id="start-session-btn">Iniciar rutina</button>
+      <button class="btn btn-secondary btn-large" id="start-rest-btn" hidden>Iniciar caminata libre</button>
+
+      <label class="check-row" id="done-row">
+        <input type="checkbox" id="done-checkbox" />
+        <span>Marcar el día de hoy como completado</span>
+      </label>
+    </div>
+
+    <div class="card" id="today-detail-card">
+      <h3>Detalle de hoy</h3>
+      <div id="today-detail-list" class="detail-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== Pantalla: Semana ===== -->
+  <section id="screen-week" class="screen" data-screen="week" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Vista general</p>
+        <h1>Mi semana</h1>
+      </div>
+    </header>
+    <div class="card">
+      <div id="week-list" class="week-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== Pantalla: Peso ===== -->
+  <section id="screen-weight" class="screen" data-screen="weight" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Progreso</p>
+        <h1>Mi peso</h1>
+      </div>
+    </header>
+
+    <div class="card stats-card">
+      <div class="stat">
+        <span class="stat-value" id="stat-current">—</span>
+        <span class="stat-label">Actual (kg)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-lost">—</span>
+        <span class="stat-label">Bajado (kg)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-target">—</span>
+        <span class="stat-label">Meta (kg)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="progress-track">
+        <div class="progress-fill" id="weight-progress-fill"></div>
+      </div>
+      <p class="progress-caption" id="weight-progress-caption">—</p>
+    </div>
+
+    <div class="card">
+      <h3>Registrar peso</h3>
+      <form id="weight-form" class="weight-form">
+        <input type="number" step="0.1" min="30" max="300" id="weight-input" placeholder="Ej: 95.4" required />
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </form>
+      <p class="hint">Registra siempre el mismo día y a la misma hora.</p>
+    </div>
+
+    <div class="card">
+      <h3>Historial</h3>
+      <canvas id="weight-chart" width="600" height="180"></canvas>
+      <div id="weight-history" class="weight-history"></div>
+    </div>
+  </section>
+
+  <!-- ===== Overlay: Sesión guiada ===== -->
+  <section id="screen-session" class="screen session-screen" hidden>
+    <div class="session-top">
+      <button class="icon-btn" id="session-exit-btn" aria-label="Salir">✕</button>
+      <p class="session-day" id="session-day-label">—</p>
+      <button class="icon-btn" id="session-mute-btn" aria-label="Silenciar">🔊</button>
+    </div>
+
+    <div class="session-progress-bar">
+      <div class="session-progress-fill" id="session-progress-fill"></div>
+    </div>
+
+    <div class="session-body">
+      <p class="session-phase-label" id="session-phase-label">Calentamiento</p>
+      <p class="session-detail" id="session-detail">—</p>
+      <div class="session-timer" id="session-timer">03:00</div>
+      <p class="session-next" id="session-next">—</p>
+    </div>
+
+    <div class="session-controls" id="session-controls">
+      <button class="round-btn" id="session-skip-btn">Saltar ▶︎</button>
+      <button class="round-btn round-btn-primary" id="session-pause-btn">Pausar</button>
+    </div>
+  </section>
+
+  <!-- ===== Overlay: Fin de sesión ===== -->
+  <section id="screen-done" class="screen done-screen" hidden>
+    <div class="done-content">
+      <p class="done-emoji">🎉</p>
+      <h2>¡Rutina completada!</h2>
+      <p id="done-message">Buen trabajo hoy.</p>
+      <button class="btn btn-primary btn-large" id="done-close-btn">Listo</button>
+    </div>
+  </section>
+
+  <!-- ===== Navegación inferior ===== -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-target="today">
+      <span class="tab-icon">🏠</span><span>Hoy</span>
+    </button>
+    <button class="tab-btn" data-target="week">
+      <span class="tab-icon">📅</span><span>Semana</span>
+    </button>
+    <button class="tab-btn" data-target="weight">
+      <span class="tab-icon">⚖️</span><span>Peso</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

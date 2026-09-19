@@ -4,6 +4,8 @@
   const STORAGE = {
     weights: "rutinafit.weights",
     completions: "rutinafit.completions",
+    goal: "rutinafit.goal",
+    settings: "rutinafit.settings",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -31,6 +33,13 @@
     const m = Math.floor(s / 60);
     const r = s % 60;
     return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+  }
+
+  function getGoal() {
+    const saved = readJSON(STORAGE.goal, {});
+    const goal = { ...DEFAULT_GOAL, ...saved };
+    goal.targetWeight = goal.startWeight - goal.targetLoss;
+    return goal;
   }
 
   // ===================== Navegación por pestañas =====================
@@ -151,19 +160,22 @@
   }
 
   // ===================== Pantalla "Peso" =====================
+  let editingDate = null; // fecha (YYYY-MM-DD) del registro que se está editando, o null
+
   function renderWeightScreen() {
+    const goal = getGoal();
     const entries = readJSON(STORAGE.weights, []).sort((a, b) => a.date.localeCompare(b.date));
-    const current = entries.length ? entries[entries.length - 1].weight : GOAL.startWeight;
-    const lost = Math.max(0, GOAL.startWeight - current);
-    const pct = Math.min(100, Math.max(0, (lost / GOAL.targetLoss) * 100));
+    const current = entries.length ? entries[entries.length - 1].weight : goal.startWeight;
+    const lost = Math.max(0, goal.startWeight - current);
+    const pct = Math.min(100, Math.max(0, (lost / goal.targetLoss) * 100));
 
     $("stat-current").textContent = current.toFixed(1);
     $("stat-lost").textContent = lost.toFixed(1);
-    $("stat-target").textContent = GOAL.targetWeight.toFixed(1);
+    $("stat-target").textContent = goal.targetWeight.toFixed(1);
     $("weight-progress-fill").style.width = `${pct}%`;
     $("weight-progress-caption").textContent = entries.length
-      ? `${pct.toFixed(0)}% del camino hacia la meta de ${GOAL.targetWeight} kg`
-      : `Registra tu primer peso para ver tu progreso hacia ${GOAL.targetWeight} kg`;
+      ? `${pct.toFixed(0)}% del camino hacia la meta de ${goal.targetWeight} kg`
+      : `Registra tu primer peso para ver tu progreso hacia ${goal.targetWeight} kg`;
 
     const historyEl = $("weight-history");
     if (!entries.length) {
@@ -184,13 +196,53 @@
             day: "numeric",
             month: "short",
           });
-          return `<div class="weight-history-row"><span>${dateLabel}</span><span>${e.weight.toFixed(1)} kg</span>${deltaHtml}</div>`;
+          return `<div class="weight-history-row" data-date="${e.date}">
+            <span>${dateLabel}</span>
+            <span>${e.weight.toFixed(1)} kg</span>
+            ${deltaHtml}
+            <span class="weight-history-actions">
+              <button class="row-icon-btn" data-action="edit" data-date="${e.date}" aria-label="Editar">✏️</button>
+              <button class="row-icon-btn" data-action="delete" data-date="${e.date}" aria-label="Borrar">🗑️</button>
+            </span>
+          </div>`;
         })
         .join("");
     }
 
-    drawWeightChart(entries);
+    drawWeightChart(entries, goal);
   }
+
+  $("weight-history").addEventListener("click", (e) => {
+    const btn = e.target.closest(".row-icon-btn");
+    if (!btn) return;
+    const date = btn.dataset.date;
+    const entries = readJSON(STORAGE.weights, []);
+
+    if (btn.dataset.action === "delete") {
+      if (!confirm("¿Borrar este registro de peso?")) return;
+      writeJSON(STORAGE.weights, entries.filter((en) => en.date !== date));
+      if (editingDate === date) cancelWeightEdit();
+      renderWeightScreen();
+    } else if (btn.dataset.action === "edit") {
+      const entry = entries.find((en) => en.date === date);
+      if (!entry) return;
+      editingDate = date;
+      $("weight-input").value = entry.weight;
+      $("weight-input").focus();
+      $("weight-form-title").textContent = `Editando ${new Date(date + "T00:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`;
+      $("weight-form-submit").textContent = "Actualizar";
+      $("weight-edit-cancel-btn").hidden = false;
+    }
+  });
+
+  function cancelWeightEdit() {
+    editingDate = null;
+    $("weight-input").value = "";
+    $("weight-form-title").textContent = "Registrar peso";
+    $("weight-form-submit").textContent = "Guardar";
+    $("weight-edit-cancel-btn").hidden = true;
+  }
+  $("weight-edit-cancel-btn").addEventListener("click", cancelWeightEdit);
 
   $("weight-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -198,16 +250,88 @@
     const value = parseFloat(input.value);
     if (!Number.isFinite(value)) return;
     const entries = readJSON(STORAGE.weights, []);
-    const key = todayKey();
+    const key = editingDate || todayKey();
     const existingIdx = entries.findIndex((en) => en.date === key);
     if (existingIdx >= 0) entries[existingIdx].weight = value;
     else entries.push({ date: key, weight: value });
     writeJSON(STORAGE.weights, entries);
-    input.value = "";
+    cancelWeightEdit();
     renderWeightScreen();
   });
 
-  function drawWeightChart(entries) {
+  // ----- Meta editable -----
+  $("goal-toggle-btn").addEventListener("click", () => {
+    const goal = getGoal();
+    $("goal-start-input").value = goal.startWeight;
+    $("goal-loss-input").value = goal.targetLoss;
+    $("goal-form").hidden = !$("goal-form").hidden;
+  });
+
+  $("goal-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const startWeight = parseFloat($("goal-start-input").value);
+    const targetLoss = parseFloat($("goal-loss-input").value);
+    if (!Number.isFinite(startWeight) || !Number.isFinite(targetLoss)) return;
+    writeJSON(STORAGE.goal, { startWeight, targetLoss });
+    $("goal-form").hidden = true;
+    renderWeightScreen();
+  });
+
+  // ----- Copia de seguridad (exportar / importar) -----
+  $("export-btn").addEventListener("click", async () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      weights: readJSON(STORAGE.weights, []),
+      completions: readJSON(STORAGE.completions, {}),
+      goal: readJSON(STORAGE.goal, {}),
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const filename = `rutinafit-backup-${todayKey()}.json`;
+
+    try {
+      const file = new File([json], filename, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Rutina Fit — copia de seguridad" });
+        return;
+      }
+    } catch {
+      /* el usuario canceló el share sheet, o no está disponible: seguimos con la descarga */
+    }
+
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  $("import-btn").addEventListener("click", () => $("import-file-input").click());
+
+  $("import-file-input").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data.weights)) throw new Error("formato inválido");
+      if (!confirm("Esto reemplazará tus registros de peso, días completados y meta actuales en este dispositivo. ¿Continuar?")) return;
+      writeJSON(STORAGE.weights, data.weights);
+      writeJSON(STORAGE.completions, data.completions || {});
+      writeJSON(STORAGE.goal, data.goal || {});
+      renderWeightScreen();
+      renderTodayScreen();
+      alert("Copia de seguridad importada correctamente.");
+    } catch {
+      alert("No se pudo leer ese archivo. Asegúrate de elegir un respaldo exportado desde Rutina Fit.");
+    }
+  });
+
+  function drawWeightChart(entries, goal) {
     const canvas = $("weight-chart");
     const ctx = canvas.getContext("2d");
     const W = canvas.width;
@@ -224,8 +348,8 @@
 
     const pad = 24;
     const weights = entries.map((e) => e.weight);
-    const min = Math.min(...weights, GOAL.targetWeight) - 1;
-    const max = Math.max(...weights, GOAL.startWeight) + 1;
+    const min = Math.min(...weights, goal.targetWeight) - 1;
+    const max = Math.max(...weights, goal.startWeight) + 1;
     const xStep = (W - pad * 2) / (entries.length - 1);
     const yFor = (w) => H - pad - ((w - min) / (max - min)) * (H - pad * 2);
 
@@ -233,8 +357,8 @@
     ctx.strokeStyle = "rgba(52, 199, 89, 0.6)";
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(pad, yFor(GOAL.targetWeight));
-    ctx.lineTo(W - pad, yFor(GOAL.targetWeight));
+    ctx.moveTo(pad, yFor(goal.targetWeight));
+    ctx.lineTo(W - pad, yFor(goal.targetWeight));
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -264,7 +388,7 @@
 
   // ===================== Sesión guiada (timer) =====================
   let audioCtx = null;
-  let muted = false;
+  let muted = Boolean(readJSON(STORAGE.settings, {}).muted);
 
   function beep(freq = 880, duration = 0.12) {
     if (muted) return;
@@ -389,6 +513,7 @@
   $("session-mute-btn").addEventListener("click", (e) => {
     muted = !muted;
     e.target.textContent = muted ? "🔇" : "🔊";
+    writeJSON(STORAGE.settings, { ...readJSON(STORAGE.settings, {}), muted });
   });
 
   $("done-close-btn").addEventListener("click", () => {
@@ -438,6 +563,7 @@
   }
 
   // ===================== Init =====================
+  $("session-mute-btn").textContent = muted ? "🔇" : "🔊";
   renderTodayScreen();
   showScreen("today");
 })();

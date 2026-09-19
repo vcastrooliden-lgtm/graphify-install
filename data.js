@@ -94,12 +94,9 @@ const CIRCUIT_SECONDS = 15 * 60;
 const COOLDOWN_SECONDS = 2 * 60;
 const STATION_SECONDS = 60;
 
-const GOAL = {
+const DEFAULT_GOAL = {
   startWeight: 96,
   targetLoss: 10,
-  get targetWeight() {
-    return this.startWeight - this.targetLoss;
-  },
 };
 
 // Construye la lista de fases de la sesión guiada para un día con circuito.

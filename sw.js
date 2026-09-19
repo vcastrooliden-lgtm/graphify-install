@@ -1,4 +1,4 @@
-const CACHE_NAME = "rutinafit-v3";
+const CACHE_NAME = "rutinafit-v4";
 const ASSETS = [
   "./",
   "./index.html",

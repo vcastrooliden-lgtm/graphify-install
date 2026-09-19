@@ -323,6 +323,15 @@ function figurePoseMarkup(pose, opts) {
   ].join("");
 }
 
+// No inventamos enlaces a un video puntual de YouTube (podría estar roto, privado
+// o ni siquiera ser el correcto). En su lugar armamos una búsqueda de YouTube con
+// el nombre real del ejercicio: siempre da resultados válidos y vigentes.
+function exerciseVideoUrl(key, extraText) {
+  const label = EXERCISE_LABELS[key] || "";
+  const query = `${extraText || label} ejercicio técnica correcta`.trim();
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+
 // Devuelve el marcado SVG completo (con ambas posturas) para una clave de ejercicio.
 function renderExerciseFigure(key, { weights = false, showGround = true } = {}) {
   const poses = POSES[key];

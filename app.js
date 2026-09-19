@@ -74,11 +74,14 @@
     const startBtn = $("start-session-btn");
     const restBtn = $("start-rest-btn");
 
+    const videoLink = (key, text) =>
+      `<a class="video-link" href="${exerciseVideoUrl(key, text)}" target="_blank" rel="noopener">▶ Ver video</a>`;
+
     if (routine.rest) {
       summary.innerHTML = `<div class="phase-chip">🧘 Día de descanso activo</div>`;
       detailList.innerHTML = `<div class="detail-row">
         <div class="detail-figure">${renderExerciseFigure(routine.restKey)}</div>
-        <div class="detail-text">${routine.description}</div>
+        <div class="detail-text">${routine.description}${videoLink(routine.restKey, "caminar")}</div>
       </div>`;
       startBtn.hidden = true;
       restBtn.hidden = false;
@@ -91,17 +94,17 @@
       detailList.innerHTML = [
         `<div class="detail-row">
           <div class="detail-figure">${renderExerciseFigure(routine.warmup.key)}</div>
-          <div class="detail-text"><b>Calentamiento</b>${routine.warmup.text}</div>
+          <div class="detail-text"><b>Calentamiento</b>${routine.warmup.text}${videoLink(routine.warmup.key)}</div>
         </div>`,
         ...routine.stations.map(
           (s, i) => `<div class="detail-row">
             <div class="detail-figure">${renderExerciseFigure(s.key, { weights: s.weights })}</div>
-            <div class="detail-text"><b>Estación ${i + 1}</b>${s.text}</div>
+            <div class="detail-text"><b>Estación ${i + 1}</b>${s.text}${videoLink(s.key, s.text)}</div>
           </div>`
         ),
         `<div class="detail-row">
           <div class="detail-figure">${renderExerciseFigure(routine.cooldown.key)}</div>
-          <div class="detail-text"><b>Enfriamiento</b>${routine.cooldown.text}</div>
+          <div class="detail-text"><b>Enfriamiento</b>${routine.cooldown.text}${videoLink(routine.cooldown.key)}</div>
         </div>`,
       ].join("");
       startBtn.hidden = false;
@@ -457,9 +460,17 @@
     $("session-detail").textContent = phase.detail;
     $("session-timer").textContent = fmtTime(session.remaining);
     $("session-figure").innerHTML = renderExerciseFigure(phase.exerciseKey, { weights: phase.weights });
+    $("session-video-link").href = exerciseVideoUrl(phase.exerciseKey, phase.type === "station" ? phase.detail : undefined);
     const next = session.phases[session.index + 1];
     $("session-next").textContent = next ? `Siguiente: ${next.detail}` : "Última fase";
   }
+
+  $("session-video-link").addEventListener("click", () => {
+    if (session.timerId && !session.paused) {
+      session.paused = true;
+      $("session-pause-btn").textContent = "Reanudar";
+    }
+  });
 
   function tick(skipCountdownCheck) {
     if (session.paused) return;
@@ -550,6 +561,7 @@
     $("session-phase-label").textContent = "Caminata libre";
     $("session-detail").textContent = routine.description;
     $("session-figure").innerHTML = renderExerciseFigure(routine.restKey);
+    $("session-video-link").href = exerciseVideoUrl(routine.restKey, "caminar");
     $("session-next").textContent = "Meta sugerida: 15–20 minutos";
     $("session-progress-fill").style.width = "0%";
     restSeconds = 0;

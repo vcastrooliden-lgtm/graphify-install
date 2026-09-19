@@ -195,6 +195,15 @@ h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-seco
 }
 .detail-text { font-size: 14.5px; line-height: 1.4; }
 .detail-text b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); margin-bottom: 2px; }
+.video-link {
+  display: block;
+  width: fit-content;
+  margin-top: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+}
 
 /* ===== Figuras animadas de ejercicios (ver exercises.js) ===== */
 .exercise-fig { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -415,6 +424,14 @@ h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-seco
   margin-top: 14px;
   font-size: 13.5px;
   color: rgba(255,255,255,0.5);
+}
+.session-video-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .session-controls {

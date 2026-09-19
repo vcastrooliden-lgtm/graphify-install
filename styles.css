@@ -180,14 +180,52 @@ h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-seco
 .detail-row {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 .detail-row:last-child { border-bottom: none; }
-.detail-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+.detail-figure {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-radius: 10px;
+  color: var(--accent);
+}
 .detail-text { font-size: 14.5px; line-height: 1.4; }
 .detail-text b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); margin-bottom: 2px; }
+
+/* ===== Figuras animadas de ejercicios (ver exercises.js) ===== */
+.exercise-fig { width: 100%; height: 100%; display: block; overflow: visible; }
+.fig-head { fill: currentColor; }
+.fig-torso, .fig-limb {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fig-ground { stroke: currentColor; stroke-width: 3; opacity: 0.15; }
+.fig-prop { fill: var(--accent-strong); }
+.session-figure .fig-prop { fill: #ffd479; }
+
+@keyframes fig-crossfade-a {
+  0%, 38% { opacity: 1; }
+  50%, 88% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes fig-crossfade-b {
+  0%, 38% { opacity: 0; }
+  50%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.fig-pose-a { animation: fig-crossfade-a 1.6s ease-in-out infinite; }
+.fig-pose-b { animation: fig-crossfade-b 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .fig-pose-a, .fig-pose-b { animation: none; }
+  .fig-pose-b { opacity: 0; }
+}
 
 .week-list { display: flex; flex-direction: column; gap: 4px; }
 .week-row {
@@ -352,6 +390,7 @@ h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--text-seco
   text-align: center;
   gap: 6px;
 }
+.session-figure { width: 128px; height: 128px; margin-bottom: 4px; }
 .session-phase-label {
   font-size: 15px;
   font-weight: 800;

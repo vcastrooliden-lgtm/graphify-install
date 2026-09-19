@@ -76,7 +76,10 @@
 
     if (routine.rest) {
       summary.innerHTML = `<div class="phase-chip">🧘 Día de descanso activo</div>`;
-      detailList.innerHTML = `<div class="detail-row"><span class="detail-icon">🚶</span><div class="detail-text">${routine.description}</div></div>`;
+      detailList.innerHTML = `<div class="detail-row">
+        <div class="detail-figure">${renderExerciseFigure(routine.restKey)}</div>
+        <div class="detail-text">${routine.description}</div>
+      </div>`;
       startBtn.hidden = true;
       restBtn.hidden = false;
     } else {
@@ -86,12 +89,20 @@
         <div class="phase-chip">🧊 Enfriamiento · 2 min</div>
       `;
       detailList.innerHTML = [
-        `<div class="detail-row"><span class="detail-icon">🔥</span><div class="detail-text"><b>Calentamiento</b>${routine.warmup}</div></div>`,
+        `<div class="detail-row">
+          <div class="detail-figure">${renderExerciseFigure(routine.warmup.key)}</div>
+          <div class="detail-text"><b>Calentamiento</b>${routine.warmup.text}</div>
+        </div>`,
         ...routine.stations.map(
-          (s, i) =>
-            `<div class="detail-row"><span class="detail-icon">${i + 1}️⃣</span><div class="detail-text"><b>Estación ${i + 1}</b>${s}</div></div>`
+          (s, i) => `<div class="detail-row">
+            <div class="detail-figure">${renderExerciseFigure(s.key, { weights: s.weights })}</div>
+            <div class="detail-text"><b>Estación ${i + 1}</b>${s.text}</div>
+          </div>`
         ),
-        `<div class="detail-row"><span class="detail-icon">🧊</span><div class="detail-text"><b>Enfriamiento</b>${routine.cooldown}</div></div>`,
+        `<div class="detail-row">
+          <div class="detail-figure">${renderExerciseFigure(routine.cooldown.key)}</div>
+          <div class="detail-text"><b>Enfriamiento</b>${routine.cooldown.text}</div>
+        </div>`,
       ].join("");
       startBtn.hidden = false;
       restBtn.hidden = true;
@@ -445,6 +456,7 @@
     $("session-phase-label").textContent = phase.label;
     $("session-detail").textContent = phase.detail;
     $("session-timer").textContent = fmtTime(session.remaining);
+    $("session-figure").innerHTML = renderExerciseFigure(phase.exerciseKey, { weights: phase.weights });
     const next = session.phases[session.index + 1];
     $("session-next").textContent = next ? `Siguiente: ${next.detail}` : "Última fase";
   }
@@ -537,6 +549,7 @@
     document.querySelector(".tabbar").hidden = true;
     $("session-phase-label").textContent = "Caminata libre";
     $("session-detail").textContent = routine.description;
+    $("session-figure").innerHTML = renderExerciseFigure(routine.restKey);
     $("session-next").textContent = "Meta sugerida: 15–20 minutos";
     $("session-progress-fill").style.width = "0%";
     restSeconds = 0;
